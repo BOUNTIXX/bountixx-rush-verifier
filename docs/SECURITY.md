@@ -21,3 +21,18 @@ the same payload returns the original signature; reusing a key for a different
 payload fails. The production `IdempotencyStore` implementation must be durable
 and make `putIfAbsent` atomic across all service instances. The in-memory store
 exists only for tests and local development.
+
+## HTTP boundary
+
+`createVerifierHttpServer()` exposes only `GET /health` and
+`POST /v1/attestations`. The attestation endpoint requires an exact Bearer
+secret supplied by the private app backend, requires JSON, limits request size,
+and returns `Cache-Control: no-store`. It is not a public browser endpoint.
+
+The adapter intentionally has no default environment loader or in-memory
+production mode. Deployment code must retrieve the Ed25519 signing key from a
+secret manager, inject a trusted locked-manifest reader, and use an atomic
+durable `IdempotencyStore`. Run the service on private networking or behind an
+authenticated service-to-service gateway, rotate the shared secret separately
+from the verifier signing key, and log request IDs without logging signatures,
+winner addresses, or the Bearer secret.
