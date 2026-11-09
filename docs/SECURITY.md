@@ -29,10 +29,12 @@ exists only for tests and local development.
 secret supplied by the private app backend, requires JSON, limits request size,
 and returns `Cache-Control: no-store`. It is not a public browser endpoint.
 
-The adapter intentionally has no default environment loader or in-memory
-production mode. Deployment code must retrieve the Ed25519 signing key from a
-secret manager, inject a trusted locked-manifest reader, and use an atomic
-durable `IdempotencyStore`. Run the service on private networking or behind an
-authenticated service-to-service gateway, rotate the shared secret separately
-from the verifier signing key, and log request IDs without logging signatures,
-winner addresses, or the Bearer secret.
+`src/runtime.ts` is the default production composition. It reads an Ed25519 key
+from `RUSH_VERIFIER_PRIVATE_KEY_PEM`, fetches an immutable manifest through the
+app's secret-protected internal endpoint, and persists idempotency records in
+PostgreSQL/Neon with an atomic unique-key insert. Configure every value through
+a deployment secret manager; do not use the in-memory store outside tests.
+Run the service on private networking or behind an authenticated
+service-to-service gateway, rotate `RUSH_VERIFIER_SHARED_SECRET` separately
+from the verifier signing key and `RUSH_MANIFEST_READER_SECRET`, and log request
+IDs without logging signatures, winner addresses, or Bearer secrets.

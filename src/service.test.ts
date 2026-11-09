@@ -57,10 +57,10 @@ function request() {
   };
 }
 
-test("attests against a locked manifest and replays an identical idempotent request", () => {
+test("attests against a locked manifest and replays an identical idempotent request", async () => {
   const { service, publicKey } = createService();
-  const first = service.attest(request());
-  const retried = service.attest(request());
+  const first = await service.attest(request());
+  const retried = await service.attest(request());
 
   assert.equal(first.replayed, false);
   assert.equal(retried.replayed, true);
@@ -68,37 +68,36 @@ test("attests against a locked manifest and replays an identical idempotent requ
   assert.equal(verifyAttestation(first.attestation, publicKey), true);
 });
 
-test("refuses reused idempotency keys and mismatched locked manifest hashes", () => {
+test("refuses reused idempotency keys and mismatched locked manifest hashes", async () => {
   const { service } = createService();
   const initial = request();
-  service.attest(initial);
+  await service.attest(initial);
 
-  assert.throws(
-    () => service.attest({ ...initial, result: { ...initial.result, score: 99 } }),
+  await assert.rejects(
+    service.attest({ ...initial, result: { ...initial.result, score: 99 } }),
     IdempotencyConflictError,
   );
-  assert.throws(
-    () =>
-      service.attest({
-        ...request(),
-        idempotencyKey: "attest-stellar-builder-rush-0002",
-        manifestHash: "a".repeat(64),
-      }),
+  await assert.rejects(
+    service.attest({
+      ...request(),
+      idempotencyKey: "attest-stellar-builder-rush-0002",
+      manifestHash: "a".repeat(64),
+    }),
     AttestationRequestError,
   );
 });
 
-test("rejects malformed request data before any signing operation", () => {
+test("rejects malformed request data before any signing operation", async () => {
   const { service } = createService();
   const invalid = request();
 
-  assert.throws(() => service.attest({ ...invalid, idempotencyKey: "too-short" }), AttestationRequestError);
-  assert.throws(
-    () => service.attest({ ...invalid, result: { ...invalid.result, submissionIds: ["submission-01", ""] } }),
+  await assert.rejects(service.attest({ ...invalid, idempotencyKey: "too-short" }), AttestationRequestError);
+  await assert.rejects(
+    service.attest({ ...invalid, result: { ...invalid.result, submissionIds: ["submission-01", ""] } }),
     AttestationRequestError,
   );
-  assert.throws(
-    () => service.attest({ ...invalid, result: { ...invalid.result, campaignId: "other-rush" } }),
+  await assert.rejects(
+    service.attest({ ...invalid, result: { ...invalid.result, campaignId: "other-rush" } }),
     AttestationRequestError,
   );
 });

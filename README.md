@@ -17,8 +17,12 @@ adds a deliberately small HTTP adapter: `GET /health` and authenticated
 It does not load credentials, open a port by itself, or place signing material
 in a client.
 
-The HTTP adapter takes an injected service. A deployment must provide a trusted
-manifest reader and durable, atomic idempotency storage before exposing it.
-`createInMemoryIdempotencyStore()` is only for tests/local development.
+The HTTP adapter takes an injected service. `src/runtime.ts` also provides the
+production composition: a private app-backed locked-manifest reader and a
+durable Neon/PostgreSQL idempotency table. Start it with `npm run build` then
+`npm start` after supplying the environment documented in `.env.example`.
+The app must expose its verifier-only manifest endpoint with the same
+`RUSH_MANIFEST_READER_SECRET`. `createInMemoryIdempotencyStore()` remains only
+for tests/local development.
 
 This service does not custody funds. Soroban contracts own the settlement boundary. Read `PROJECT_CONTEXT.md` before contributing.

@@ -7,10 +7,10 @@ import {
 } from "./service.js";
 
 export interface HttpAttestationService {
-  attest(request: AttestResultRequest): {
+  attest(request: AttestResultRequest): Promise<{
     attestation: unknown;
     replayed: boolean;
-  };
+  }>;
 }
 
 export interface VerifierHttpOptions {
@@ -94,7 +94,7 @@ export function createVerifierHttpServer(options: VerifierHttpOptions): Server {
 
     try {
       const body = await readJson(request, maxBodyBytes);
-      const result = options.service.attest(body as AttestResultRequest);
+      const result = await options.service.attest(body as AttestResultRequest);
       writeJson(response, 200, result);
     } catch (error) {
       if (error instanceof RequestTooLargeError) {

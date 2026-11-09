@@ -6,10 +6,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
-    "test": "npm run build && node --test dist/**/*.test.js"
+    "test": "npm run build && node --test dist/**/*.test.js",
+    "start": "node dist/main.js"
   },
   "dependencies": {
-    "@bountixx/rush-sdk": "file:../bountixx-rush-sdk"
+    "@bountixx/rush-sdk": "file:../bountixx-rush-sdk",
+    "@neondatabase/serverless": "^1.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.2",

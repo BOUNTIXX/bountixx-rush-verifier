@@ -21,7 +21,7 @@ export interface AttestResultResponse {
 }
 
 export interface LockedManifestReader {
-  find(campaignId: string, arenaId: string): RushManifest | undefined;
+  find(campaignId: string, arenaId: string): Awaitable<RushManifest | undefined>;
 }
 
 export interface IdempotencyRecord {
@@ -34,9 +34,11 @@ export interface IdempotencyRecord {
  * A durable store is required before this module is exposed through HTTP.
  */
 export interface IdempotencyStore {
-  get(key: string): IdempotencyRecord | undefined;
-  putIfAbsent(key: string, record: IdempotencyRecord): IdempotencyRecord;
+  get(key: string): Awaitable<IdempotencyRecord | undefined>;
+  putIfAbsent(key: string, record: IdempotencyRecord): Awaitable<IdempotencyRecord>;
 }
+
+type Awaitable<T> = T | Promise<T>;
 
 export interface AttestationServiceOptions {
   manifestReader: LockedManifestReader;
@@ -120,13 +122,13 @@ function matchingRecord(key: string, fingerprint: string, record: IdempotencyRec
  */
 export function createAttestationService(options: AttestationServiceOptions) {
   return {
-    attest(request: AttestResultRequest): AttestResultResponse {
+    async attest(request: AttestResultRequest): Promise<AttestResultResponse> {
       validateRequestShape(request);
       const fingerprint = requestFingerprint(request);
-      const existing = options.idempotencyStore.get(request.idempotencyKey);
+      const existing = await options.idempotencyStore.get(request.idempotencyKey);
       if (existing) return matchingRecord(request.idempotencyKey, fingerprint, existing);
 
-      const manifest = options.manifestReader.find(request.campaignId, request.arenaId);
+      const manifest = await options.manifestReader.find(request.campaignId, request.arenaId);
       if (!manifest) {
         throw new AttestationRequestError("No locked manifest exists for this campaign and arena.");
       }
@@ -143,7 +145,7 @@ export function createAttestationService(options: AttestationServiceOptions) {
 
       const attestation = attestResult(manifest, request.result, options.verifierKeyId, options.privateKey);
       const record = { fingerprint, attestation };
-      const stored = options.idempotencyStore.putIfAbsent(request.idempotencyKey, record);
+      const stored = await options.idempotencyStore.putIfAbsent(request.idempotencyKey, record);
       if (stored !== record) return matchingRecord(request.idempotencyKey, fingerprint, stored);
       return { attestation, replayed: false };
     },
